@@ -6,100 +6,94 @@
  * @return {Object}
  */
 
-function _input(root, count, resolve, reject, cmd, options){
-  root.append('<span id="input' + count + '" class="input"></span>');
-  type = new Typed("#input" + count, {
+var id=0;
+
+function _input(state, resolve, reject, cmd, options){
+  $(state.root).append('<span id="input' + state.count + '" class="input"></span>');
+  console.log(state.root);
+  type = new Typed("#input" + state.count, {
     strings: ["$ ^200" + cmd + "<br/>"], 
     loop: false, 
     typeSpeed: 65,
+    onTypingPaused: function(pos, self) { 
+      content = $(state.root).parent().parent();
+      $(content).scrollTop($(content)[0].scrollHeight); 
+    },
+    onTypingResumed: function(pos, self) { 
+      content = $(state.root).parent().parent();
+      $(content).scrollTop($(content)[0].scrollHeight); 
+    },
     onComplete(self) {
       self.destroy();
-      root.append('<span id="input' + count + '" class="input">$ ' + cmd +'<br/></span>');
+      $(state.root).append('<span id="input' + state.count + '" class="input">$ ' + cmd +'<br/></span>');
       resolve();
     }
   });
 }
 
-function _output(root, count, resolve, reject, cmd, options){
-  root.append('<span id="output' + count + '" class="output"></span>');
-  type = new Typed("#output" + count, {
+function _inputCB(term, resolve, reject, cmd, options){
+}
+
+function _output(state, resolve, reject, cmd, options){
+  $(state.root).append('<span id="output' + state.count + '" class="output"></span>');
+  type = new Typed("#output" + state.count, {
     strings: ["`" + cmd + "`<br/>"], 
     loop: false, 
     typeSpeed: 65,
+    onTypingPaused: function(pos, self) { 
+      content = $(state.root).parent().parent();
+      $(content).scrollTop($(content)[0].scrollHeight); 
+    },
+    onTypingResumed: function(pos, self) { 
+      content = $(state.root).parent().parent();
+      $(content).scrollTop($(content)[0].scrollHeight); 
+    },
     onComplete(self) {
       self.destroy();
-      root.append('<span id="output' + count + '" class="output">' + cmd +'<br/></span>');
+      $(state.root).append('<span id="output' + state.count + '" class="output">' + cmd +'<br/></span>');
       resolve();
     }
   });
 }
 
-function output(cmd, options) {
-  prevCmd = this.promise;
-  root = this.root;
-  id = this.id
-  count = id.count++;
-  return {
-    root: root,
-    count: count,
-    id: id,
-    promise: new Promise(function(resolve, reject) {
-      if (prevCmd) {
-        prevCmd.then(_output.bind(null, root, count, resolve, reject, cmd, options))
-      } else {
-        _output(root, count, resolve, reject, cmd, options);
-      }
-    }),
-    input: input,
-    output: output
-  }
+function _outputCB(term, resolve, reject, cmd, options){
 }
 
-function input(cmd, options) {
-  prevCmd = this.promise;
-  root = this.root;
-  id = this.id
-  count = id.count++;
-  return {
-    root: root,
-    count: count,
-    id: id,
-    promise: new Promise(function(resolve, reject) {
-      if (prevCmd) {
-        prevCmd.then(_input.bind(null, root, count, resolve, reject, cmd, options))
-      } else {
-        _input(root, count, resolve, reject, cmd, options);
-      }
-    }),
-    input: input,
-    output: output
-  }
+
+function then(func, state, cmd, options) {
+  pending = state.promise;
+  state.count++;
+  state.promise = new Promise(function(resolve, reject) {
+    if (pending) {
+      pending.then(func.bind(null, jQuery.extend(true, {}, state), resolve, reject, cmd, options))
+    } else {
+      func(jQuery.extend(true, {}, state), resolve, reject, cmd, options);
+    }
+  });
+
+  return state;
 }
 
-function terminal(selector, options) {
-  var width = (typeof options !== 'undefined' && options.width) || $(selector).width();
-  var height = (typeof options !== 'undefined' && options.height) || 400;
+function terminal(selector) {
+  var content = "content" + id++;
 
-  $(selector).empty()
   // Convert element to terminal
   $(selector).append('<div class="text-editor-wrap">\
 <div class="title-bar">\
 <span class="icon close-icon"></span>\
 <span class="icon minimize-icon"></span>\
 <span class="icon fullScreen-icon"></span>\
-<span>bash - ' + width + ' x ' + height + '</span></span>\
+<span>bash - 8x x 20</span></span>\
 </div>\
 <div data-simplebar class="text-body">\
-<span id="content" style="white-space:pre;"></span>\
+<span id="' + content + '" style="white-space:pre;"></span>\
 </div>\
 </div>');
-  id = { count: 0 }
-  return {
-    id: id,
-    terminal: this,
-    root: $("#content"),
-    promise: null,
-    input: input,
-    output: output
-  };
+
+  state = { count: 0, root: "#" + content, promise: null};
+  state.input    = then.bind(null, _input, state);
+  state.inputCB  = then.bind(null, _inputCB, state),
+  state.output   = then.bind(null, _output, state),
+  state.outputCB = then.bind(null, _outputCB, state)
+  return state;state
 }

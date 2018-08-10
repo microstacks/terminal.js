@@ -8,55 +8,41 @@
 
 var id=0;
 
-function _input(state, resolve, reject, cmd, options){
-  $(state.root).append('<span id="input' + state.count + '" class="input"></span>');
-  console.log(state.root);
-  type = new Typed("#input" + state.count, {
+function input(state, resolve, reject, cmd, options){
+  content = "#" + state.root;
+  $(content).append('<span id="'+ state.root +'-input' + state.count + '" class="input"></span>');
+  type = new Typed("#" + state.root + "-input" + state.count, {
     strings: ["$ ^200" + cmd + "<br/>"], 
     loop: false, 
     typeSpeed: 65,
     onTypingPaused: function(pos, self) { 
-      content = $(state.root).parent().parent();
-      $(content).scrollTop($(content)[0].scrollHeight); 
+      text = $(content).parent().parent();
+      $(text).scrollTop($(text)[0].scrollHeight); 
     },
     onTypingResumed: function(pos, self) { 
-      content = $(state.root).parent().parent();
-      $(content).scrollTop($(content)[0].scrollHeight); 
+      text = $(content).parent().parent();
+      $(text).scrollTop($(text)[0].scrollHeight); 
     },
     onComplete(self) {
       self.destroy();
-      $(state.root).append('<span id="input' + state.count + '" class="input">$ ' + cmd +'<br/></span>');
+      $(content).append('<span id="'+ state.root +'-input' + state.count + '" class="input">$ ' + cmd +'<br/></span>');
       resolve();
     }
   });
 }
 
-function _inputCB(term, resolve, reject, cmd, options){
+function inputCB(term, resolve, reject, cmd, options) {
 }
 
-function _output(state, resolve, reject, cmd, options){
-  $(state.root).append('<span id="output' + state.count + '" class="output"></span>');
-  type = new Typed("#output" + state.count, {
-    strings: ["`" + cmd + "`<br/>"], 
-    loop: false, 
-    typeSpeed: 65,
-    onTypingPaused: function(pos, self) { 
-      content = $(state.root).parent().parent();
-      $(content).scrollTop($(content)[0].scrollHeight); 
-    },
-    onTypingResumed: function(pos, self) { 
-      content = $(state.root).parent().parent();
-      $(content).scrollTop($(content)[0].scrollHeight); 
-    },
-    onComplete(self) {
-      self.destroy();
-      $(state.root).append('<span id="output' + state.count + '" class="output">' + cmd +'<br/></span>');
-      resolve();
-    }
-  });
+function output(state, resolve, reject, cmd, options) {
+  content = "#" + state.root;
+  $(content).append('<span id="'+ state.root +'-output' + state.count + '" class="output">' + cmd +'<br/></span>');
+  text = $(state.root).parent().parent();
+  $(text).scrollTop($(content)[0].scrollHeight); 
+  resolve();
 }
 
-function _outputCB(term, resolve, reject, cmd, options){
+function outputCB(term, resolve, reject, cmd, options){
 }
 
 
@@ -90,10 +76,10 @@ function terminal(selector) {
 </div>\
 </div>');
 
-  state = { count: 0, root: "#" + content, promise: null};
-  state.input    = then.bind(null, _input, state);
-  state.inputCB  = then.bind(null, _inputCB, state),
-  state.output   = then.bind(null, _output, state),
-  state.outputCB = then.bind(null, _outputCB, state)
+  state = { count: 0, root: content, promise: null};
+  state.input    = then.bind(null, input, state);
+  state.inputCB  = then.bind(null, inputCB, state),
+  state.output   = then.bind(null, output, state),
+  state.outputCB = then.bind(null, outputCB, state)
   return state;state
 }

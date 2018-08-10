@@ -9,97 +9,115 @@
 var id=0;
 
 function input(state, resolve, reject, args, last){
-  console.log(arguments.callee.name, args)
-  console.log(arguments.callee.name, last);
+  console.log(arguments.callee.name, arguments);
   cmd = args[0]
-  var content = "#" + state.root;
-  $(content).append('<span id="'+ state.root +'-input' + state.count + '" class="input"></span>');
-  type = new Typed("#" + state.root + "-input" + state.count, {
+  var content = $("#" + state.root);
+  var id = state.root +'-input' + state.count;
+  var el = $('<span>', {id: id, class: 'input'});
+  el.appendTo(content);
+  type = new Typed("#" + id, {
     strings: ["$ ^200" + cmd + "<br/>"], 
     loop: false, 
     typeSpeed: state.speed,
     cursorChar: state.cursor,
     onTypingPaused: function(pos, self) { 
-      text = $(content).parent().parent();
-      $(text).scrollTop($(text)[0].scrollHeight); 
+      text = content.parent().parent();
+      text.scrollTop(text[0].scrollHeight); 
     },
     onTypingResumed: function(pos, self) { 
-      text = $(content).parent().parent();
-      $(text).scrollTop($(text)[0].scrollHeight); 
+      text = content.parent().parent();
+      text.scrollTop(text[0].scrollHeight); 
     },
     onComplete(self) {
       self.destroy();
-      $(content).append('<span id="'+ state.root +'-input' + state.count + '" class="input">$ ' + cmd +'<br/></span>');
-      resolve($("#" + state.root +'-input' + state.count));
+      el.remove();
+      el.html("$ " + cmd + "<br/>");
+      el.appendTo(content);
+      resolve(el);
     }
   });
 }
 
-function inputCB(state, resolve, reject, cb, last) {
-  console.log(arguments.callee.name, args);
-  console.log(arguments.callee.name, last);
-  cb = args[0]
-  var content = "#" + state.root;
-  var input = $(content).append('<span id="'+ state.root +'-input' + state.count + '" class="input"></span><br/>');
-  text = $(content).parent().parent();
-  $(text).scrollTop($(content)[0].scrollHeight); 
+function inputCB(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  var content = $("#" + state.root);
+  el = $('<span>', {id: state.root +'-input' + state.count, class: 'input'});
+  el.append('<br/>');
+  el.appendTo(content);
+  text = content.parent().parent();
+  text.scrollTop(text[0].scrollHeight); 
 
   done = function() {
-    resolve($("#" + state.root +'-input' + state.count));
+    resolve(el);
   }
 
-  cb($("#" + state.root + "-input" + state.count), done, reject);
+  cb(el, done);
 }
 
 function output(state, resolve, reject, args, last) {
-  console.log(arguments.callee.name, last);
-  content = "#" + state.root;
-  $(content).append('<span id="'+ state.root +'-output' + state.count + '" class="output">' + cmd +'<br/></span>');
-  text = $(content).parent().parent();
-  $(text).scrollTop($(content)[0].scrollHeight); 
-  resolve($("#" + state.root +'-output' + state.count));
+  console.log(arguments.callee.name, arguments);
+  cmd = args[0];
+  content = $("#" + state.root);
+  id = state.root +'-output' + state.count;
+  el = $('<span>', {id: id, class: 'output', html: cmd + '<br/>'});
+  el.appendTo(content);
+  text = content.parent().parent();
+  text.scrollTop(text[0].scrollHeight); 
+  resolve(el);
 }
 
-function outputCB(state, resolve, reject, cb, last){
-  console.log(arguments.callee.name, last);
-  var content = "#" + state.root;
-  $(content).append('<span id="'+ state.root +'-output' + state.count + '" class="output"></span><br/>');
-  text = $(content).parent().parent();
-  $(text).scrollTop($(content)[0].scrollHeight); 
+function outputCB(state, resolve, reject, args, last){
+  console.log(arguments.callee.name, arguments);
+  var content = $("#" + state.root);
+  el = $('<span>', {id: state.root +'-output' + state.count, class: 'ouput'});
+  el.append('<br/>');
+  el.appendTo(content);
+  text = content.parent().parent();
+  text.scrollTop(text[0].scrollHeight); 
 
   done = function() {
-    resolve($("#" + state.root +'-output' + state.count));
+    resolve(el);
   }
 
-  cb($("#" + state.root + "-output" + state.count), done, reject);
+  cb(el, done);
 }
 
-function wait(state, resolve, reject, timeout, last) {
-  console.log(arguments.callee.name, last);
-  content = "#" + state.root;
-  $(content).append('<span id="'+ state.root +'-wait' + state.count + '" class="input"></span>');
-  type = new Typed("#" + state.root + "-wait" + state.count, {
+function wait(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  timeout = args[0];
+  content = $("#" + state.root);
+  id = state.root +'-wait' + state.count;
+  el = $('<span>', {id: id, class: 'input'});
+  if (last[0].className == 'input') {
+    last.find('br').remove();
+  }
+  el.appendTo(content);
+  type = new Typed("#" + id, {
     strings: ["^" + timeout],
     loop: false, 
     typeSpeed: state.speed,
     cursorChar: state.cursor,
     onTypingPaused: function(pos, self) { 
-      text = $(content).parent().parent();
-      $(text).scrollTop($(text)[0].scrollHeight); 
+      text = content.parent().parent();
+      text.scrollTop(text[0].scrollHeight); 
     },
     onTypingResumed: function(pos, self) { 
-      text = $(content).parent().parent();
-      $(text).scrollTop($(text)[0].scrollHeight); 
+      text = content.parent().parent();
+      text.scrollTop(text[0].scrollHeight); 
     },
     onComplete(self) {
       self.destroy();
-      resolve($("#" + state.root +'-wait' + state.count));
+      el.remove();
+      if (last[0].className == 'input') {
+        last.append('<br/>');
+      }
+      resolve(last);
     }
   });
 }
 
 function explain(state, resolve, reject, timeout, last) {
-  console.log(arguments.callee.name, last);
+  console.log(arguments.callee.name, arguments);
   resolve(last);
   
 }

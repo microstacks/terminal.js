@@ -12,7 +12,7 @@ function run(state, resolve, reject, args, last){
   cmd = args[0]
   var el = $('<span>', {class: 'command'}).appendTo(state.root);
   type = new Typed(el[0], {
-    strings: ["$ ^200" + cmd + "<br/>"], 
+    strings: ["$ ^200" + cmd], 
     loop: false, 
     typeSpeed: state.speed,
     cursorChar: state.cursor,
@@ -20,8 +20,8 @@ function run(state, resolve, reject, args, last){
     onTypingResumed: function(pos, self) { scroll(state.root); },
     onComplete(self) {
       self.destroy();
-      el.html("$ " + cmd + "<br/>");
-      resolve(el);
+      el.html("$ " + cmd);
+      resolve(el[0]);
     }
   });
 }
@@ -29,7 +29,7 @@ function run(state, resolve, reject, args, last){
 function output(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
   cmd = args[0];
-  el = $('<span>', {class: 'output', html: cmd + '<br/>'}).appendTo(state.root);
+  el = $('<span>', {class: 'output', html: cmd}).appendTo(state.root);
   scroll(state.root);
   resolve(el);
 }
@@ -38,9 +38,6 @@ function wait(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
   timeout = args[0];
   el = $('<span>', {class: 'command'}).appendTo(state.root);
-  if (last[0].className == 'command') {
-    last.find('br').remove();
-  }
   type = new Typed(el[0], {
     strings: ["^" + timeout],
     loop: false, 
@@ -51,9 +48,6 @@ function wait(state, resolve, reject, args, last) {
     onComplete(self) {
       self.destroy();
       el.remove();
-      if (last[0].className == 'command') {
-        last.append('<br/>');
-      }
       resolve(last);
     }
   });
@@ -62,25 +56,16 @@ function wait(state, resolve, reject, args, last) {
 function tooltip(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
   title = args[0];
-  timeout = args[1] || 1000;
-  last[0].title = title;
-  tippy(last[0], {theme: 'custom', arrow: true, placement: 'right', distance: 20, popperOptions: {
+  last.title = title;
+  tippy(last, {theme: 'custom', arrow: true, placement: 'right', distance: 20, popperOptions: {
     modifiers: {
       preventOverflow: {
       	enabled: false
       }
     }
   }});
-  console.log(last[0]._tippy);
-  last[0]._tippy.show();
-  
-  function hide(last){
-    last[0]._tippy.hide();
-    resolve(last);
-  }
-  
-  setTimeout(hide, timeout, last);
-  
+
+  resolve(last._tippy);
 }
 
 function mutate(state, resolve, reject, args, last) {
@@ -93,6 +78,33 @@ function mutate(state, resolve, reject, args, last) {
 
   cb(last, done);
 }
+
+function hide(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  if ( typeof last.hide === 'undefined') {
+    $(last).hide();
+  } else{
+    last.hide()
+  }
+  resolve(last);
+}
+
+function show(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  if ( typeof last.show === 'undefined') {
+    $(last).show();
+  } else{
+    last.show()
+  }
+  resolve(last);
+}
+
+function enter(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  $("<br/>").appendTo(last);
+  resolve(last);
+}
+
 
 
 function pipeline(func, state) {
@@ -133,5 +145,8 @@ function terminal(selector, options) {
   state.wait     = pipeline.bind(null, wait, state);
   state.tooltip  = pipeline.bind(null, tooltip, state);
   state.mutate   = pipeline.bind(null, mutate, state);
+  state.hide     = pipeline.bind(null, hide, state);
+  state.show     = pipeline.bind(null, show, state);
+  state.enter     = pipeline.bind(null, enter, state);
   return state;
 }

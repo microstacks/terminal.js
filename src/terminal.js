@@ -1,114 +1,57 @@
 /**
  * Welcome to Terminal.js
- * Exported module
- * @param {String|Element|Element[]|NodeList|Object} selector
- * @param {Object} options
- * @return {Object}
  */
 
-var id=0;
+function scroll(root) {
+  text = root.parent().parent();
+  text.scrollTop(text[0].scrollHeight); 
+}
 
-function input(state, resolve, reject, args, last){
+function run(state, resolve, reject, args, last){
   console.log(arguments.callee.name, arguments);
   cmd = args[0]
-  var content = $("#" + state.root);
-  var id = state.root +'-input' + state.count;
-  var el = $('<span>', {id: id, class: 'input'});
-  el.appendTo(content);
-  type = new Typed("#" + id, {
+  var el = $('<span>', {class: 'command'}).appendTo(state.root);
+  type = new Typed(el[0], {
     strings: ["$ ^200" + cmd + "<br/>"], 
     loop: false, 
     typeSpeed: state.speed,
     cursorChar: state.cursor,
-    onTypingPaused: function(pos, self) { 
-      text = content.parent().parent();
-      text.scrollTop(text[0].scrollHeight); 
-    },
-    onTypingResumed: function(pos, self) { 
-      text = content.parent().parent();
-      text.scrollTop(text[0].scrollHeight); 
-    },
+    onTypingPaused: function(pos, self) { scroll(state.root); },
+    onTypingResumed: function(pos, self) { scroll(state.root); },
     onComplete(self) {
       self.destroy();
-      el.remove();
       el.html("$ " + cmd + "<br/>");
-      el.appendTo(content);
       resolve(el);
     }
   });
 }
 
-function inputCB(state, resolve, reject, args, last) {
-  console.log(arguments.callee.name, arguments);
-  var content = $("#" + state.root);
-  el = $('<span>', {id: state.root +'-input' + state.count, class: 'input'});
-  el.append('<br/>');
-  el.appendTo(content);
-  text = content.parent().parent();
-  text.scrollTop(text[0].scrollHeight); 
-
-  done = function() {
-    resolve(el);
-  }
-
-  cb(el, done);
-}
-
 function output(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
   cmd = args[0];
-  content = $("#" + state.root);
-  id = state.root +'-output' + state.count;
-  el = $('<span>', {id: id, class: 'output', html: cmd + '<br/>'});
-  el.appendTo(content);
-  text = content.parent().parent();
-  text.scrollTop(text[0].scrollHeight); 
+  el = $('<span>', {class: 'output', html: cmd + '<br/>'}).appendTo(state.root);
+  scroll(state.root);
   resolve(el);
-}
-
-function outputCB(state, resolve, reject, args, last){
-  console.log(arguments.callee.name, arguments);
-  var content = $("#" + state.root);
-  el = $('<span>', {id: state.root +'-output' + state.count, class: 'ouput'});
-  el.append('<br/>');
-  el.appendTo(content);
-  text = content.parent().parent();
-  text.scrollTop(text[0].scrollHeight); 
-
-  done = function() {
-    resolve(el);
-  }
-
-  cb(el, done);
 }
 
 function wait(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
   timeout = args[0];
-  content = $("#" + state.root);
-  id = state.root +'-wait' + state.count;
-  el = $('<span>', {id: id, class: 'input'});
-  if (last[0].className == 'input') {
+  el = $('<span>', {class: 'command'}).appendTo(state.root);
+  if (last[0].className == 'command') {
     last.find('br').remove();
   }
-  el.appendTo(content);
-  type = new Typed("#" + id, {
+  type = new Typed(el[0], {
     strings: ["^" + timeout],
     loop: false, 
     typeSpeed: state.speed,
     cursorChar: state.cursor,
-    onTypingPaused: function(pos, self) { 
-      text = content.parent().parent();
-      text.scrollTop(text[0].scrollHeight); 
-    },
-    onTypingResumed: function(pos, self) { 
-      text = content.parent().parent();
-      text.scrollTop(text[0].scrollHeight); 
-    },
+    onTypingPaused: function(pos, self) { scroll(state.root); },
+    onTypingResumed: function(pos, self) { scroll(state.root); },
     onComplete(self) {
       self.destroy();
       el.remove();
-      if (last[0].className == 'input') {
+      if (last[0].className == 'command') {
         last.append('<br/>');
       }
       resolve(last);
@@ -116,59 +59,79 @@ function wait(state, resolve, reject, args, last) {
   });
 }
 
-function explain(state, resolve, reject, timeout, last) {
+function tooltip(state, resolve, reject, args, last) {
   console.log(arguments.callee.name, arguments);
-  resolve(last);
+  title = args[0];
+  timeout = args[1] || 1000;
+  last[0].title = title;
+  tippy(last[0], {theme: 'custom', arrow: true, placement: 'right', distance: 20, popperOptions: {
+    modifiers: {
+      preventOverflow: {
+      	enabled: false
+      }
+    }
+  }});
+  console.log(last[0]._tippy);
+  last[0]._tippy.show();
+  
+  function hide(last){
+    last[0]._tippy.hide();
+    resolve(last);
+  }
+  
+  setTimeout(hide, timeout, last);
   
 }
 
-function queue(func, state) {
+function mutate(state, resolve, reject, args, last) {
+  console.log(arguments.callee.name, arguments);
+  cb = args[0]
+
+  done = function() {
+    resolve(last);
+  }
+
+  cb(last, done);
+}
+
+
+function pipeline(func, state) {
   var args = [];
   for (var idx = 0; idx < arguments.length; idx++) {
     if (idx < 2) continue;
     args.push(arguments[idx]);
   }
   pending = state.promise;
-  state.count++;
   state.promise = new Promise(function(resolve, reject) {
-    if (pending) {
-      pending.then(func.bind(null, jQuery.extend(true, {}, state), resolve, reject, args))
-    } else {
-      func(jQuery.extend(true, {}, state), resolve, reject, args);
-    }
+    call = func.bind(null, jQuery.extend(true, {}, state), resolve, reject, args)
+    pending && pending.then(call) || call();
   });
 
   return state;
 }
 
 function terminal(selector, options) {
-  var content = "content" + id++;
-
-  // Convert element to terminal
-  $(selector).append('<div class="text-editor-wrap">\
-<div class="title-bar">\
-<span class="icon close-icon"></span>\
-<span class="icon minimize-icon"></span>\
-<span class="icon fullScreen-icon"></span>\
-<span>bash - 80 x 20</span></span>\
-</div>\
-<div data-simplebar class="text-body">\
-<span id="' + content + '" style="white-space:pre;"></span>\
-</div>\
-</div>');
-
+  term = $("<div>", {class: 'text-editor-wrap'});
+  titleBar = $("<div>", {class: 'title-bar'}).appendTo(term);
+  closeIcon = $("<span>", {class: 'icon close-icon'}).appendTo(titleBar);
+  closeMinimize = $("<span>", {class: 'icon minimize-icon'}).appendTo(titleBar);
+  closeFullscreen = $("<span>", {class: 'icon fullscreen-icon'}).appendTo(titleBar);
+  title = $("<span>").text('bash - 80 x 20').appendTo(titleBar);
+  textBody = $("<div>", {class: 'text-body'}).attr('data-simplebar', '').appendTo(term);
+  content = $('<span>').css('white-space', 'pre').appendTo(textBody);
+  term.appendTo(selector);
+    
   state = { 
-    count: 0, 
     root: content, 
     promise: null, 
     cursor: (options && options.cursor) || "_",
     speed: (options && options.speed) || 65
   };
-  state.input    = queue.bind(null, input, state);
-  state.inputCB  = queue.bind(null, inputCB, state),
-  state.output   = queue.bind(null, output, state),
-  state.outputCB = queue.bind(null, outputCB, state),
-  state.wait     = queue.bind(null, wait, state)
-  state.explain  = queue.bind(null, explain, state)
-  return state;state
+  
+  state.run      = pipeline.bind(null, run, state);
+  state.output   = pipeline.bind(null, output, state);
+  state.wait     = pipeline.bind(null, wait, state);
+  state.tooltip  = pipeline.bind(null, tooltip, state);
+  state.mutate   = pipeline.bind(null, mutate, state);
+  return state;
 }
